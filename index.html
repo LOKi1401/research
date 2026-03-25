@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulting Research Dashboard</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #3b82f6;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background-color: var(--primary);
+            color: white;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .sidebar h2 { margin-top: 0; font-size: 20px; letter-spacing: 0.5px;}
+        .sidebar p { color: #94a3b8; font-size: 14px; line-height: 1.5; }
+        
+        .input-group { margin-top: 30px; }
+        .input-group label { display: block; font-size: 12px; text-transform: uppercase; color: #cbd5e1; margin-bottom: 8px; letter-spacing: 1px;}
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        input[type="text"]:focus { outline: none; border-color: var(--secondary); }
+        
+        button.generate-btn {
+            width: 100%;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button.generate-btn:hover { background-color: #2563eb; }
+
+        /* Progress Bar */
+        .progress-container { margin-top: auto; }
+        .progress-text { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: #cbd5e1;}
+        .progress-bar-bg { width: 100%; background: #334155; height: 8px; border-radius: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.4s ease; }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+        .header-title { font-size: 28px; font-weight: 700; margin-bottom: 30px; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+            gap: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+        }
+        .card:hover { border-color: #cbd5e1; transform: translateY(-2px); }
+        .card.completed { border-left: 4px solid var(--success); background: #f0fdf4; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .card h3 { margin: 0; font-size: 18px; color: var(--primary); }
+        .card p { margin: 5px 0 0 0; font-size: 14px; color: var(--text-muted); }
+        
+        .query-box {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #334155;
+            margin-bottom: 15px;
+            word-break: break-all;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e2e8f0;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #475569;
+        }
+        .copy-btn:hover { background: #cbd5e1; }
+
+        .action-row { display: flex; gap: 10px; align-items: center; }
+        
+        .search-btn {
+            flex: 1;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 8px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .search-btn:hover { background: #f1f5f9; }
+        .search-btn.primary { background: var(--secondary); color: white; border: none; }
+        .search-btn.primary:hover { background: #2563eb; }
+
+        .status-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--success);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Report Architect</h2>
+        <p>Define your topic to generate a structured research dashboard.</p>
+        
+        <div class="input-group">
+            <label>Research Topic</label>
+            <input type="text" id="topicInput" value="Cold chain for temperature-sensitive diagnostics" placeholder="Enter topic...">
+            <button class="generate-btn" onclick="generateDashboard()">Initialize Workspace</button>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-text">
+                <span>Research Progress</span>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-title" id="dashboardTitle">Workspace: Not Initialized</div>
+        <div class="grid" id="dashboardGrid">
+            </div>
+    </div>
+
+<script>
+    const framework = [
+        {
+            id: 1,
+            title: "1. Macroeconomic Context",
+            desc: "GDP, inflation, and healthcare spend metrics.",
+            query: '"{topic}" AND ("GDP impact" OR "inflation" OR "healthcare expenditure") filetype:pdf',
+            targets: [
+                { name: "World Bank", url: "https://www.google.com/search?q=site:worldbank.org+{query}" },
+                { name: "General Web", url: "https://www.google.com/search?q={query}" }
+            ]
+        },
+        {
+            id: 2,
+            title: "2. Market Sizing & CAGR",
+            desc: "TAM, SAM, SOM, and revenue forecasting data.",
+            query: '"{topic}" AND ("market size" OR "CAGR" OR "revenue forecast" OR "TAM")',
+            targets: [
+                { name: "Consulting Reports", url: "https://www.google.com/search?q={query}+(site:mckinsey.com OR site:bcg.com OR site:bain.com OR site:frost.com)" },
+                { name: "Statista", url: "https://www.statista.com/search/?q={topic}" }
+            ]
+        },
+        {
+            id: 3,
+            title: "3. Value Chain & Modalities",
+            desc: "Logistics, supply chain bottlenecks, and equipment.",
+            query: '"{topic}" AND ("value chain" OR "supply chain bottlenecks" OR "logistics framework")',
+            targets: [
+                { name: "Industry Articles", url: "https://www.google.com/search?q={query}" }
+            ]
+        },
+        {
+            id: 4,
+            title: "4. R&D and Academic Trends",
+            desc: "Emerging technologies and innovator research.",
+            query: '"{topic}" AND ("R&D" OR "innovation" OR "emerging technologies" OR "clinical trials")',
+            targets: [
+                { name: "Google Scholar", url: "https://scholar.google.com/scholar?q={query}" },
+                { name: "PubMed / NIH", url: "https://www.google.com/search?q=site:ncbi.nlm.nih.gov+{query}" }
+            ]
+        },
+        {
+            id: 5,
+            title: "5. Competitive Landscape",
+            desc: "Market share, key players, and recent M&A.",
+            query: '"{topic}" AND ("market share" OR "key players" OR "competitive landscape" OR "M&A")',
+            targets: [
+                { name: "Financial News", url: "https://www.google.com/search?q={query}+(site:bloomberg.com OR site:reuters.com)" }
+            ]
+        }
+    ];
+
+    let completedSections = new Set();
+
+    function generateDashboard() {
+        const topic = document.getElementById('topicInput').value.trim();
+        if (!topic) { alert("Please enter a topic."); return; }
+
+        document.getElementById('dashboardTitle').innerText = `Workspace: ${topic}`;
+        const grid = document.getElementById('dashboardGrid');
+        grid.innerHTML = '';
+        completedSections.clear();
+        updateProgress();
+
+        framework.forEach(sec => {
+            // Encode the specific query string
+            const rawQuery = sec.query.replace('{topic}', topic);
+            const encodedQuery = encodeURIComponent(rawQuery);
+            const encodedTopic = encodeURIComponent(topic);
+
+            // Build Target Buttons
+            let buttonsHtml = '';
+            sec.targets.forEach((target, index) => {
+                const finalUrl = target.url.replace('{query}', encodedQuery).replace('{topic}', encodedTopic);
+                const btnClass = index === 0 ? 'search-btn primary' : 'search-btn';
+                buttonsHtml += `<a href="${finalUrl}" target="_blank" class="${btnClass}">${target.name}</a>`;
+            });
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `card-${sec.id}`;
+            card.innerHTML = `
+                <div class="card-header">
+                    <div>
+                        <h3>${sec.title}</h3>
+                        <p>${sec.desc}</p>
+                    </div>
+                    <input type="checkbox" class="status-checkbox" onchange="toggleStatus(${sec.id}, this.checked)">
+                </div>
+                
+                <div class="query-box">
+                    <button class="copy-btn" onclick="copyText(this, '${rawQuery.replace(/'/g, "\\'")}')">Copy</button>
+                    ${rawQuery}
+                </div>
+
+                <div class="action-row">
+                    ${buttonsHtml}
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function toggleStatus(id, isChecked) {
+        const card = document.getElementById(`card-${id}`);
+        if (isChecked) {
+            card.classList.add('completed');
+            completedSections.add(id);
+        } else {
+            card.classList.remove('completed');
+            completedSections.delete(id);
+        }
+        updateProgress();
+    }
+
+    function updateProgress() {
+        const total = framework.length;
+        const completed = completedSections.size;
+        const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+        
+        document.getElementById('progressBar').style.width = `${percentage}%`;
+        document.getElementById('progressText').innerText = `${percentage}%`;
+    }
+
+    function copyText(btnElement, text) {
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = btnElement.innerText;
+            btnElement.innerText = 'Copied!';
+            btnElement.style.background = '#10b981';
+            btnElement.style.color = 'white';
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+                btnElement.style.background = '#e2e8f0';
+                btnElement.style.color = '#475569';
+            }, 2000);
+        });
+    }
+
+    // Auto-initialize on load
+    window.onload = generateDashboard;
+</script>
+
+</body>
+</html>
